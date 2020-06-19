@@ -199,33 +199,33 @@ def plot_spikes(sp):
 
 
 # testing zone
-sf = SpectralFile("Titan/Titan/Win0.clean1.contsub_Jy.rest.scom.c.txt")
-print(read(sf).data - convert_units(get_stats(read(sf))).data)
-import pdb; pdb.set_trace()  # XXX BREAKPOINT
-#sf = read(sf)
-#sd = get_stats(sf)
-#pprint(sd)
-#
-#
-## test out all our warnings
-#spikes = identify_spikes(sf, three_sigma_spike, average_method=trimmed_mean, std_method = std)
-#pdb.set_trace()  # XXX BREAKPOINT
-#
-#pprint(identify_spikes(sd, three_sigma_spike))
-#pprint(spikes)
-#
-#plot_spikes(spikes)
-#plot_spikes(identify_spikes(sd))
-#pdb.set_trace()  # XXX BREAKPOINT
-
-
-#out = []
-#for f in os.listdir("Titan/Titan/"):
-#    sf = SpectralFile(f"Titan/Titan/{f}")
-#    sd = read(sf)
-#    out += [sd]
-#    sd_stats = get_stats(sd)
-#    plot_spikes(identify_spikes(sd))
-#
+#sf = SpectralFile("Titan/Titan/Win0.clean1.contsub_Jy.rest.scom.c.txt")
+#print(read(sf).data - convert_units(get_stats(read(sf))).data)
 #import pdb; pdb.set_trace()  # XXX BREAKPOINT
+##sf = read(sf)
+##sd = get_stats(sf)
+##pprint(sd)
+##
+##
+### test out all our warnings
+##spikes = identify_spikes(sf, three_sigma_spike, average_method=trimmed_mean, std_method = std)
+##pdb.set_trace()  # XXX BREAKPOINT
+##
+##pprint(identify_spikes(sd, three_sigma_spike))
+##pprint(spikes)
+##
+##plot_spikes(spikes)
+##plot_spikes(identify_spikes(sd))
+##pdb.set_trace()  # XXX BREAKPOINT
 #
+#
+##out = []
+##for f in os.listdir("Titan/Titan/"):
+##    sf = SpectralFile(f"Titan/Titan/{f}")
+##    sd = read(sf)
+##    out += [sd]
+##    sd_stats = get_stats(sd)
+##    plot_spikes(identify_spikes(sd))
+##
+##import pdb; pdb.set_trace()  # XXX BREAKPOINT
+##
