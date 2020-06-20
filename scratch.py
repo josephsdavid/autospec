@@ -4,13 +4,14 @@ from collections import namedtuple
 import scipy.stats as ss
 from pprint import pprint
 import pdb
+from molecules import get_molecule_data
 
 # this is probably not the way forward, but I think having minimalist classes
 # makes a lot of sense, and is easier to manage, I also like immutability but
 # that is just for messing around
 # for unit conversions i think we can just use a helper dict
 
-_unit_dict = {
+unit_dict = {
     'Hz': 1,
     'kHz': 1e3,
     'MHz': 1e6,
@@ -19,6 +20,12 @@ _unit_dict = {
 
 def convert_units(s, to='GHz'):
     # fix for SDS class, make pure
+    unit_dict = {
+        'Hz': 1,
+        'kHz': 1e3,
+        'MHz': 1e6,
+        'GHz': 1e9
+    }
     freq = s.frequency.copy()
     freq *= _unit_dict[s.units]/_unit_dict[to]
     out = s._asdict()
@@ -197,9 +204,8 @@ def plot_spikes(sp):
 
 
 
-
 # testing zone
-#sf = SpectralFile("Titan/Titan/Win0.clean1.contsub_Jy.rest.scom.c.txt")
+sf = SpectralFile("Titan/Titan/Win0.clean1.contsub_Jy.rest.scom.c.txt")
 #print(read(sf).data - convert_units(get_stats(read(sf))).data)
 #import pdb; pdb.set_trace()  # XXX BREAKPOINT
 ##sf = read(sf)
