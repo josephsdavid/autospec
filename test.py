@@ -21,17 +21,7 @@ sf = nasa.SpectralFile(f"Titan/Titan/Win0.clean1.contsub_Jy.rest.scom.c.txt")
 sd = nasa.read(sf)
 #ghz_data = nasa.convert_units(sd, to='GHz')
 spikes = nasa.identify_spikes(sd)
-mms = m.query_splatalogue(spikes)
-out = []
-for mm in mms:
-    try:
-        x = m.get_molecule_data(*mm)
-        print(x)
-        out.append(x)
-    except:
-        import pdb; pdb.set_trace()  # XXX BREAKPOINT
-        pass
-
+molecule_dict = m.get_molecules_from_spikes(spikes)
 
 import pdb; pdb.set_trace()  # XXX BREAKPOINT
 

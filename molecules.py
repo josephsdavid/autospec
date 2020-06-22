@@ -53,6 +53,8 @@ SpectralQuery = doctuple(
         "units"
     )
 )
+
+
 def get_molecule_data(db, tag, molecule = None):
     db_dict = {
         "JPL":{
@@ -70,32 +72,17 @@ def get_molecule_data(db, tag, molecule = None):
     lines = re.sub("(?i)[\n]?[\n]?</?pre[^>]*>[\n]?[\s]?","",lines).split("\n")
     data = np.array([list(map(_regex_helper, x.split()[:3])) for x in lines[:-1]])
     return SpectralQuery(molecule, data, *data.T, 'GHz')
+#def get_molecule_csv():
+#    # put the csv online
+#    with open("all_molecules.csv",'r') as f:
+#        reader = csv.DictReader(f)
+#        out = {}
+#        for row in reader:
+#            for k, v in row.items():
+#                out.setdefault(k,[]).append(v)
+#    out['Molecule'] = out.pop('')
+#    return out
 
-
-def get_molecule_csv():
-    # put the csv online
-    with open("all_molecules.csv",'r') as f:
-        reader = csv.DictReader(f)
-        out = {}
-        for row in reader:
-            for k, v in row.items():
-                out.setdefault(k,[]).append(v)
-    out['Molecule'] = out.pop('')
-    return out
-
-def construct_mega_query():
-    # talk to partee
-    molecules = get_molecule_csv()
-    out = []
-    for i in range(len(molecules['Molecule'])):
-        print(i)
-        info = [v[i] for v in list(molecules.values())]
-        if info[1] in ["JPL","CDMS"]:
-            data = get_molecule_data(info[1], info[0], info[-1])
-            if data:
-                out.append(data)
-    return out
-    #return SpectralQuery(*zip(*out))
 
 splat_query = doctuple(
     """placeholder""","Splatalogue_Query",('db','tag','molecule')
@@ -119,6 +106,12 @@ def query_splatalogue(spikes):
         molecule = list(res['Chemical Name'])
         if res:
             out.append(splat_query(db, tag, molecule))
-    # theres gotta be a better
-    out = splat_query(*[sum(o, []) for o in splat_query(*zip(*out))])
-    return list(zip(*(out)))
+    # tuple transpositions!
+    return set(zip(*[sum(o, []) for o in zip(*out)]))
+
+def get_molecules_from_spikes(spikes):
+    molecule_set = query_splatalogue(spikes)
+    out = {}
+    for m in molecule_set:
+        out[m[-1]] = get_molecule_data(*m)
+    return out
