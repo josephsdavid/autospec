@@ -16,6 +16,7 @@ in
       scikitlearn
       h5py
       seaborn
+      pytest
       astropy
       astroquery
       beautifulsoup4

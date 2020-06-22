@@ -3,20 +3,14 @@ import matplotlib.pyplot as plt
 from collections import namedtuple
 import scipy.stats as ss
 from pprint import pprint
+from utility import doctuple
 import pdb
-from molecules import get_molecule_data
 
 # this is probably not the way forward, but I think having minimalist classes
 # makes a lot of sense, and is easier to manage, I also like immutability but
 # that is just for messing around
 # for unit conversions i think we can just use a helper dict
 
-unit_dict = {
-    'Hz': 1,
-    'kHz': 1e3,
-    'MHz': 1e6,
-    'GHz': 1e9
-}
 
 def convert_units(s, to='GHz'):
     # fix for SDS class, make pure
@@ -27,13 +21,13 @@ def convert_units(s, to='GHz'):
         'GHz': 1e9
     }
     freq = s.frequency.copy()
-    freq *= _unit_dict[s.units]/_unit_dict[to]
+    freq *= unit_dict[s.units]/unit_dict[to]
     out = s._asdict()
     out['frequency'] = freq
     out['units'] = to
     out['data'][:,0] = freq
     if 'uncertainty' in list(out.keys()):
-        out['uncertainty'] *= _unit_dict[s.units]/_unit_dict[to]
+        out['uncertainty'] *= unit_dict[s.units]/unit_dict[to]
     if type(s) is not SpectralDataStats:
         return type(s)(**out)
     else:
@@ -75,7 +69,7 @@ SpectralFile = doctuple(
     """,
     "SpectralFile",
     ["file_location", "name", "time", "date", "temp", "units"],
-    defaults=[None] * 4 + ["MHz"],
+    defaults=[None] * 4 + ["GHz"],
 )
 
 
@@ -89,7 +83,7 @@ SpectralData = doctuple(
         time=None: the the time of observation.
         date=None: the date of observation.
         temp=None: the temperature of the planetary body.
-        units=MHz: the units of frequency used.
+        units=GHz: the units of frequency used.
         data: the frequency and intensity data.
         frequency: frequency data.
         intensity: intensity data.

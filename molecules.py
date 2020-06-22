@@ -6,19 +6,11 @@ import requests
 from multiprocessing import pool
 import re
 import csv
+from astropy import units as u
+from astroquery.splatalogue import Splatalogue
+from utility import doctuple
 from functools import reduce, partial
 
-def doctuple(doc, *args, **kwargs):
-    # so we can use docstrings
-    nt = namedtuple(*args, **kwargs)
-    nt.__doc__ = doc
-    return nt
-
-
-SpectralQuery = doctuple('''
-                         documentation goes here
-                         ''',
-                         'SpectralQuery', ('molecule_name', 'data', 'frequency','uncertainty','intensity', 'units'))
 
 def _bs4_tool(url):
     return BeautifulSoup(requests.get(url).content, 'html.parser')
@@ -49,6 +41,18 @@ def _regex_helper(s):
         # verify with an adult
         return float(s[:s.find("-")])
 
+SpectralQuery = doctuple(
+    """documentation goes here""",
+    "SpectralQuery",
+    (
+        "molecule",
+        "data",
+        "frequency",
+        "uncertainty",
+        "intensity",
+        "units"
+    )
+)
 def get_molecule_data(db, tag, molecule = None):
     db_dict = {
         "JPL":{
@@ -65,7 +69,7 @@ def get_molecule_data(db, tag, molecule = None):
     # regex genius
     lines = re.sub("(?i)[\n]?[\n]?</?pre[^>]*>[\n]?[\s]?","",lines).split("\n")
     data = np.array([list(map(_regex_helper, x.split()[:3])) for x in lines[:-1]])
-    return SpectralQuery(molecule, data, *data.T, 'MHz')
+    return SpectralQuery(molecule, data, *data.T, 'GHz')
 
 
 def get_molecule_csv():
@@ -93,3 +97,28 @@ def construct_mega_query():
     return out
     #return SpectralQuery(*zip(*out))
 
+splat_query = doctuple(
+    """placeholder""","Splatalogue_Query",('db','tag','molecule')
+)
+def query_splatalogue(spikes):
+    # from a spike to the splatalogue (linelist, tag, moleculename)
+    # verify this is right
+    spacing = (spikes.data[1:, 0] - spikes.data[:-1, 0]).mean() / 2
+    bounds = np.column_stack([spikes.frequency - spacing, spikes.frequency + spacing]) * u.GHz
+    out = []
+    for i in range(spikes.frequency.shape[0]):
+        res = Splatalogue.query_lines(
+            *bounds[i,:].T,
+            show_molecule_tag = True,
+            top20='planet',
+            line_lists = ['CDMS', 'JPL'],
+            line_strengths = 'ls1'
+        )
+        tag = list(map(lambda x: str(x).zfill(6).replace('-','0'), res['Molecule<br>Tag']))
+        db = list(res['Linelist'])
+        molecule = list(res['Chemical Name'])
+        if res:
+            out.append(splat_query(db, tag, molecule))
+    # theres gotta be a better
+    out = splat_query(*[sum(o, []) for o in splat_query(*zip(*out))])
+    return list(zip(*(out)))
