@@ -35,7 +35,7 @@ def convert_units(s, to='GHz'):
 
 def trimmed_mean(x):
     # this doesnt really matter
-    return ss.trim_mean(x, proportiontocut=0.4)
+    return ss.trim_mean(x, proportiontocut=0.2)
 
 
 def std(x):
@@ -58,7 +58,7 @@ SpectralFile = doctuple(
         time=None: the the time of observation.
         date=None: the date of observation.
         temp=None: the temperature of the planetary body.
-        units=MHz: the units of frequency used.
+        units=GHz: the units of frequency used.
     functions:
         read(SpectralFile):
             returns a SpectralData object
@@ -121,7 +121,7 @@ SpectralDataStats = doctuple(
         time=None: the the time of observation.
         date=None: the date of observation.
         temp=None: the temperature of the planetary body.
-        units=MHz: the units of frequency used.
+        units=GHz: the units of frequency used.
         data: the frequency and intensity data.
         frequency: frequency data.
         intensity: intensity data.
@@ -159,7 +159,7 @@ def get_stats(sd: SpectralData, average_method=trimmed_mean, std_method=std):
 Spike = doctuple(
     """doc holder""",
     "Spike",
-    ["data", "frequency", "intensity", "index", "spike_method"],
+    ["data", "frequency", "intensity", "index", "spike_method", "units"],
 )
 
 
@@ -186,7 +186,7 @@ def identify_spikes(sd, spike_method=three_sigma_spike, **kwargs):
     else:
         sds = sd
     ids = spike_method(sds)
-    return Spike(sds.data, sds.frequency[ids], sds.intensity[ids], ids, spike_method)
+    return Spike(sds.data, sds.frequency[ids], sds.intensity[ids], ids, spike_method, sds.units)
 
 
 def plot_spikes(sp):

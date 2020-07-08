@@ -67,11 +67,12 @@ def get_molecule_data(db, tag, molecule = None):
         }
     }
     db = db.upper().strip()
+    import pdb; pdb.set_trace()  # XXX BREAKPOINT
     lines = db_dict[db]['fun'](db_dict[db]['url'], tag)
     # regex genius
     lines = re.sub("(?i)[\n]?[\n]?</?pre[^>]*>[\n]?[\s]?","",lines).split("\n")
-    data = np.array([list(map(_regex_helper, x.split()[:3])) for x in lines[:-1]])
-    return SpectralQuery(molecule, data, *data.T, 'GHz')
+    data = np.array([list(map(_regex_helper, x.split()[:3])) for x in lines[:-1]]) * u.MHz
+    return SpectralQuery(molecule, data.value, *data.value.T, 'MHz')
 #def get_molecule_csv():
 #    # put the csv online
 #    with open("all_molecules.csv",'r') as f:
