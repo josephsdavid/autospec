@@ -1,3 +1,4 @@
+from spectraldata import convert_units
 import numpy as np
 from collections import namedtuple
 from pprint import pprint
@@ -67,7 +68,6 @@ def get_molecule_data(db, tag, molecule = None):
         }
     }
     db = db.upper().strip()
-    import pdb; pdb.set_trace()  # XXX BREAKPOINT
     lines = db_dict[db]['fun'](db_dict[db]['url'], tag)
     # regex genius
     lines = re.sub("(?i)[\n]?[\n]?</?pre[^>]*>[\n]?[\s]?","",lines).split("\n")
@@ -115,4 +115,4 @@ def get_molecules_from_spikes(spikes):
     out = {}
     for m in molecule_set:
         out[m[-1]] = get_molecule_data(*m)
-    return out
+    return {k: convert_units(v, 'GHz') for k, v in out.items()}

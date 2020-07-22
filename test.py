@@ -1,7 +1,10 @@
 import spectraldata as nasa
+from pprint import pprint
+import numpy as np
 import molecules as m
 import setcover as sc
 import os
+import joblib
 
 # molecules = m.construct_mega_query
 
@@ -11,7 +14,7 @@ for f in os.listdir("Titan/Titan/"):
     sf = nasa.SpectralFile(f"Titan/Titan/{f}")
     sd = nasa.read(sf)
     spikes = nasa.identify_spikes(sd)
-    nasa.plot_spikes(spikes)
+#    nasa.plot_spikes(spikes)
 #    n_spikes += spikes.index.shape[0]
 #    print(n_spikes)
 #    m_dict = dict(m_dict, **m.get_molecules_from_spikes(spikes))
@@ -19,6 +22,8 @@ for f in os.listdir("Titan/Titan/"):
 ##    # given that that works, figure out optimal choice
 #print(len(m_dict))
 #print(n_spikes)
+
+
 
 #import pdb; pdb.set_trace()  # XXX BREAKPOINT
 
@@ -28,12 +33,26 @@ sd = nasa.read(sf)
 spikes = nasa.identify_spikes(sd)
 #import pdb; pdb.set_trace()  # XXX BREAKPOINT
 #nasa.plot_spikes(spikes)
-molecule_dict = m.get_molecules_from_spikes(spikes)
+#molecule_dict = m.get_molecules_from_spikes(spikes)
+molecule_dict = joblib.load("mol_dict.pkl")
+molecule_dict = {k: m.SpectralQuery(**v) for k, v in  molecule_dict.items()}
 # move unit conversion!
 
-molecule_dict = {k: nasa.convert_units(v, 'GHz') for k, v in molecule_dict.items()}
+import time
+rn = time.time()
+possible_sets, spike_dict = sc.set_generation(spikes, molecule_dict)
+print(time.time() - rn)
 
-possible = sc.set_cover_runner(spikes, molecule_dict, method = sc.frequency_cover)
+
+minset = sc.minimal_set(possible_sets)
+pprint(minset)
+pprint(sc.spike_explanations(
+    sc.minimal_set(possible_sets, unique = False), spike_dict))
+
+sorted_sets = sc.minimal_set_iterator(possible_sets)
+pprint(next(sorted_sets))
+
+import pdb; pdb.set_trace()  # XXX BREAKPOINT
 
 #set_dict = set_cover_runner(spikes, molecule_dict)
 #
@@ -73,7 +92,7 @@ possible = sc.set_cover_runner(spikes, molecule_dict, method = sc.frequency_cove
 #        spike_dict[spike.frequency] = [x for x in out if x]
 #    return spike_dict
 #
-#def set_covering(spikes, moles, approach='all'):
+#def set_generation(spikes, moles, approach='all'):
 #  if approach=='all':
 #    possible_moles = []
 #    for mole in moles.keys():

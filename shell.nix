@@ -20,6 +20,9 @@ in
       astropy
       astroquery
       beautifulsoup4
+      R
+      rPackages.rmarkdown
+      rPackages.reticulate
    ];
    shellHook = ''
    '';
