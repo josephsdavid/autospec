@@ -107,7 +107,10 @@ def read(sf: SpectralFile):
     '''
     read: Extract data from a spectralFile
     '''
-    data = np.genfromtxt(sf.file_location)
+    if type(sf.file_location) is not list:
+        data = np.genfromtxt(sf.file_location)
+    else:
+        data = np.vstack([np.genfromtxt(f) for f in sf.file_location])
     # *data.T is so cool
     return SpectralData(*sf, data, *data.T, data.shape[0])
 

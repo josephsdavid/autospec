@@ -1,4 +1,5 @@
 from spectraldata import convert_units
+import tqdm
 import numpy as np
 from collections import namedtuple
 from pprint import pprint
@@ -40,7 +41,7 @@ def _regex_helper(s):
         return float(match.group(0)[:-1]) if match else float(s)
     except ValueError:
         # verify with an adult
-        return float(s[:s.find("-")])
+        return float(re.sub('\D', '', s[:s.find("-")]))
 
 SpectralQuery = doctuple(
     """documentation goes here""",
@@ -51,6 +52,8 @@ SpectralQuery = doctuple(
         "frequency",
         "uncertainty",
         "intensity",
+        "deg",
+        "elo",
         "units"
     )
 )
@@ -71,7 +74,7 @@ def get_molecule_data(db, tag, molecule = None):
     lines = db_dict[db]['fun'](db_dict[db]['url'], tag)
     # regex genius
     lines = re.sub("(?i)[\n]?[\n]?</?pre[^>]*>[\n]?[\s]?","",lines).split("\n")
-    data = np.array([list(map(_regex_helper, x.split()[:3])) for x in lines[:-1]]) * u.MHz
+    data = np.array([list(map(_regex_helper, x.split()[:5])) for x in lines[:-1]]) * u.MHz
     return SpectralQuery(molecule, data.value, *data.value.T, 'MHz')
 #def get_molecule_csv():
 #    # put the csv online
@@ -111,8 +114,24 @@ def query_splatalogue(spikes):
     return set(zip(*[sum(o, []) for o in zip(*out)]))
 
 def get_molecules_from_spikes(spikes):
+    print("Querying SPlatalogue...")
     molecule_set = query_splatalogue(spikes)
     out = {}
-    for m in molecule_set:
+    for m in tqdm.tqdm(molecule_set, desc = "Extracting data from JPL/CDMS...\n"):
         out[m[-1]] = get_molecule_data(*m)
+    print("Cleaning up...")
     return {k: convert_units(v, 'GHz') for k, v in out.items()}
+
+
+
+def save_molecules(mols, path):
+    import joblib
+    mols2 = {k:v._asdict() for k, v in mols.items()}
+    joblib.dump(mols2, path)
+
+def load_molecules(path):
+    import joblib
+    return {k: SpectralQuery(**v) for k, v in joblib.load(path).items()}
+
+
+

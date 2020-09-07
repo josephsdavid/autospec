@@ -7,6 +7,7 @@ in
     name = "astro";
     buildInputs = with pkgs //  ml_libs; [
       python37
+      tqdm
       numpy
       typeguard
       numba
