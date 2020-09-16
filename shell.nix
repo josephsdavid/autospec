@@ -7,6 +7,7 @@ in
     name = "astro";
     buildInputs = with pkgs //  ml_libs; [
       python37
+      virtualenv
       tqdm
       numpy
       typeguard

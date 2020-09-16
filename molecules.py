@@ -117,7 +117,7 @@ def get_molecules_from_spikes(spikes):
     print("Querying SPlatalogue...")
     molecule_set = query_splatalogue(spikes)
     out = {}
-    for m in tqdm.tqdm(molecule_set, desc = "Extracting data from JPL/CDMS...\n"):
+    for m in tqdm.tqdm(molecule_set, desc = "Extracting data from JPL/CDMS..."):
         out[m[-1]] = get_molecule_data(*m)
     print("Cleaning up...")
     return {k: convert_units(v, 'GHz') for k, v in out.items()}

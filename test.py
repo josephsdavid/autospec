@@ -52,5 +52,10 @@ else:
 
 covers = sc.SetCovering(spikes, molecule_dict)
 
+pprint(covers.likeliest_molecules())
+
+import pdb; pdb.set_trace()  # XXX BREAKPOINT
+
+pprint(covers.likeliest_sets())
 import pdb; pdb.set_trace()  # XXX BREAKPOINT
 

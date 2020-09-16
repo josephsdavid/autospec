@@ -65,7 +65,7 @@ class SetCovering(object):
     def likeliest_sets(self):
         intensity_results = []
         for ps in self.sets:
-            ps = set(chain(*ps))
+            ps = set(it.chain(*ps))
             scores = [x[-1] for x in ps if not np.isnan(x[-1])]
             average_score = sum(scores) / len(scores)
             intensity_results.append([ps, average_score])
