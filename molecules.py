@@ -1,5 +1,4 @@
 from spectraldata import convert_units
-import tqdm
 import numpy as np
 from bs4 import BeautifulSoup
 from requests_html import AsyncHTMLSession
@@ -9,6 +8,8 @@ from astroquery.splatalogue import Splatalogue
 from utility import doctuple
 from functools import reduce, partial
 import asyncio
+from tqdm import tqdm
+from random import randint
 
 
 @asyncio.coroutine
@@ -18,6 +19,7 @@ async def _bs4_tool(url):
     await session.close()
     # Status code 200 means it was successful.
     if page.status_code == 200:
+        #print(f"Finished {url}")
         return BeautifulSoup(page.html.raw_html, "html.parser")
 
 
@@ -34,6 +36,7 @@ def _a_finder(t):
     return t.name == "a" and "HTML" in t.text
 
 
+@asyncio.coroutine
 async def _get_cdms_data(url, tag):
     soup = await _bs4_tool(f"{url}/classic/entries/")
     td_find = partial(_td_finder, tag=tag)
@@ -70,7 +73,8 @@ SpectralQuery = doctuple(
 )
 
 
-def get_molecule_data(db, tag, molecule=None):
+@asyncio.coroutine
+async def get_molecule_data(db, tag, molecule=None):
     db_dict = {
         "JPL": {
             "url": "https://spec.jpl.nasa.gov/ftp/pub/catalog",
@@ -79,7 +83,7 @@ def get_molecule_data(db, tag, molecule=None):
         "CDMS": {"url": "https://cdms.astro.uni-koeln.de", "fun": _get_cdms_data},
     }
     db = db.upper().strip()
-    lines = db_dict[db]["fun"](db_dict[db]["url"], tag)
+    lines = await db_dict[db]["fun"](db_dict[db]["url"], tag)
     # regex genius
     lines = re.sub("(?i)[\n]?[\n]?</?pre[^>]*>[\n]?[\s]?", "", lines).split("\n")
     data = (
@@ -122,13 +126,14 @@ def query_splatalogue(spikes):
             line_lists=["CDMS", "JPL"],
             line_strengths="ls1",
         )
-        tag = list(
-            map(lambda x: str(x).zfill(6).replace("-", "0"), res["Molecule<br>Tag"])
-        )
-        db = list(res["Linelist"])
-        molecule = list(res["Chemical Name"])
-        if res:
-            out.append(splat_query(db, tag, molecule))
+        if "Molecule<br>Tag" in res.keys():
+            tag = list(
+                map(lambda x: str(x).zfill(6).replace("-", "0"), res["Molecule<br>Tag"])
+            )
+            db = list(res["Linelist"])
+            molecule = list(res["Chemical Name"])
+            if res:
+                out.append(splat_query(db, tag, molecule))
     # tuple transpositions!
     return set(zip(*[sum(o, []) for o in zip(*out)]))
 
@@ -136,9 +141,15 @@ def query_splatalogue(spikes):
 def get_molecules_from_spikes(spikes):
     print("Querying SPlatalogue...")
     molecule_set = query_splatalogue(spikes)
-    out = {}
-    for m in tqdm.tqdm(molecule_set, desc = "Extracting data from JPL/CDMS..."):
-        out[m[-1]] = get_molecule_data(*m)
+    # Do the async thing
+    jobs = [get_molecule_data(*m) for m in molecule_set]
+    print("done!")
+    loop = asyncio.get_event_loop()
+    print("Query spectroscopy databases...")
+    results = []
+    for i in tqdm(range(0, len(jobs) + 5, 5)):
+        results += loop.run_until_complete(asyncio.gather(*jobs[i : i + 5]))
+    out = {m[-1]: result for m, result in zip(molecule_set, results)}
     print("Cleaning up...")
     return {k: convert_units(v, "GHz") for k, v in out.items()}
 
