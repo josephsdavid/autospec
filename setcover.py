@@ -6,7 +6,9 @@ from collections import namedtuple, defaultdict
 from functools import partial
 import itertools as it
 from multiprocessing import Pool
+import molecules as m
 from molecules import SpectralQuery
+import spectraldata as nasa
 
 def convert_intensities(molecules, temp):
     def intensity_helper(mol, temp):
@@ -45,8 +47,8 @@ def broadcast(l, a):
 
 
 class SetCovering(object):
-    def __init__(self, spikes, moles, method=frequency_cover, scoring = "intensity_score"):
-        self.sets, self.spike_dict = set_generation(spikes, moles, method, scoring)
+    def __init__(self, spikes, moles, method=frequency_cover, scoring = "intensity_score", temperature=None):
+        self.sets, self.spike_dict = set_generation(spikes, moles, method = method, scoring=scoring, temperature = temperature)
         self.spikes = spikes
         self.method = method
         self.scoring = scoring
@@ -76,13 +78,17 @@ class SetCovering(object):
 
 
 
-def set_generation(spikes, moles, method=frequency_cover, scoring = "intensity_score"):
+def set_generation(spikes, moles, method=frequency_cover, scoring = "intensity_score", temperature = None):
     if list(moles.values())[0].units != "GHz":
         ValueError("bad units! Please convert the molecules to GHz")
     spike_dict = {f: [] for f in spikes.frequency}
     spacing = (spikes.data[1:, 0] - spikes.data[:-1, 0]).mean() / 2
     spike_list = [spikes.frequency - spacing, spikes.frequency + spacing, spikes.intensity, spikes.frequency]
     out_mols = {}
+    if temperature is not None:
+        print("converting intensities")
+        moles = convert_intensities(moles, temperature)
+
     for mol in tqdm.tqdm(moles.values(), desc = "Scoring molecules..." ):
         #spike_broadcast = [np.array([s for _ in range(mol.frequency.shape[0])]).T for s in spike_list]
         spike_broadcast = broadcast(spike_list, mol.frequency)
@@ -102,7 +108,6 @@ def set_generation(spikes, moles, method=frequency_cover, scoring = "intensity_s
     spike_dict = {k: v if len(v) > 0 else ["unknown"] for k, v in spike_dict.items()}
     result = {}
     for s in tqdm.tqdm(spike_dict.keys(), desc = "Generating combinations..."):
-        # something i dont understand is goingon here
         result.setdefault(s, []).append([x for z in [list(it.combinations(spike_dict[s],y+1)) for y in range(len(spike_dict[s]))] for x in z])
     print("Restructuring data...")
     return list(map(list, zip(*list(map(list,list(it.product(*result.values()))[0]))))), spike_dict
@@ -126,11 +131,13 @@ def minimal_set_iterator(possible_sets, unique = True):
         yield get_mol_set(item) if unique else item
 
 
-def intensity_score(single_cover, spike_dict, molecule_dict, spikes):
+def intensity_score(single_cover, spike_dict, molecule_dict, spikes, temp_adjust = None):
     # invert the spike_dict, so we have molecule: spikes
     inverse_spikes = reverse_dict(spike_dict)
     molecules = set(it.chain(single_cover)) if type(single_cover) is set else set(it.chain(*single_cover))
     res = []
+    if temp_adjust:
+        molecule_dict = convert_intensities(molecule_dict, temp_adjust)
     for m in molecules:
         if m not in inverse_spikes.keys():
             res.append((m, np.nan))
@@ -141,3 +148,23 @@ def intensity_score(single_cover, spike_dict, molecule_dict, spikes):
             res.append((m,score))
     return res
 
+def batch_process(files, plot=False, temperature = None):
+    cover_list = []
+    for f in files:
+        sf = nasa.SpectralFile(f)
+        sd = nasa.read(sf)
+        spikes = nasa.identify_spikes(sd)
+        if plot:
+            nasa.plot_spikes(spikes)
+        molecules = m.get_molecules_from_spikes(spikes)
+        cover_list.append(SetCovering(spikes, molecules, temperature = temperature))
+    return cover_list
+
+def summation_score(cover_list):
+    mols = [x.likeliest_molecules() for x in cover_list]
+    mols = sum(mols, [])
+    result = {key: 0. for key in set([x[0] for x in mols])}
+    for mol in tqdm.tqdm(mols, desc="Combining results..."):
+        result[mol[0]] += mol[-1]
+    out = [(key, value) for key, value in result.items()]
+    return sorted(out, key = lambda x: x[-1], reverse = True)

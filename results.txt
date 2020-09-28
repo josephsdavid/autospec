@@ -1,0 +1,132 @@
+********************************************************************************
+Processing: Titan/Titan/Win3.clean1.contsub_Jy.rest.scom.c.txt
+
+0. Methyl Cyanide 	 score: 0.6723830666131851
+1. Peroxynitrous acid 	 score: 0.023502490719445244
+2. Cyanobutadiyne 	 score: 0.007892301768919877
+3. Methyl diacetylene 	 score: 0.001021073998974781
+4. Thioformaldehyde 	 score: 0.000770919024889335
+5. Ethyl Cyanide 	 score: 0.000658939055984104
+6. Benzaldehyde 	 score: 0.0004119086560594287
+7. Propadienylidene 	 score: 0.0004040131603545268
+8. gauche-n-butyronitrile, v<sub>30</sub> = 2 	 score: 0.00033789621160205534
+9. gauche-n-butyronitrile, v<sub>28</sub> = 1 	 score: 0.000328629134943388
+10. Formamide 	 score: 0.0003196612590892112
+11. gauche-n-butyronitrile 	 score: 0.00030538363102496985
+12. Propenal 	 score: 0.0002593469697551877
+13. Benzonitrile 	 score: 0.0002554267384625032
+14. Hydroxyacetonitrile 	 score: 0.00015128748427622167
+15. Vinyl formate 	 score: 0.0001422138942948863
+16. n-Butyl cyanide 	 score: 0.00011988149695177917
+17. Cyanamide 	 score: 0.00011551490892663508
+18. Methanimine 	 score: 9.35508622213697e-05
+19. Chloryl chloride 	 score: 7.758119421103789e-05
+20. Pyrrole 	 score: 3.276036611584592e-05
+21. Dihydroxyacetone 	 score: 3.184587079065186e-05
+22. Disulfur dioxide, <i>cis</i>-isomer 	 score: 2.8534886672404276e-05
+23. 1,3-propanediol, gGG'g 	 score: 2.5527051459056893e-05
+24. Chlorine nitrate 	 score: 1.7933194529951913e-05
+25. Nitric acid 	 score: 1.0850736747395726e-05
+26. iso-propyl cyanide 	 score: 9.622265421227776e-06
+27. 3-Methylbutyronitrile 	 score: 8.034577402122246e-06
+28. Anisole 	 score: 7.091954997603602e-06
+29. <i>cyclo</i>-Propyl cyanide 	 score: 6.603312725564235e-06
+********************************************************************************
+Processing: Titan/Titan/Win1.clean1.contsub_Jy.rest.scom.c.txt
+
+0. Formic Acid 	 score: 0.28299866236818244
+1. Glycine 	 score: 0.04223743413359855
+2. Cyanobutadiyne 	 score: 0.019630585486111067
+3. Magnesium Cyanide 	 score: 0.004672010575214959
+4. Ethyl Cyanide 	 score: 0.0038647987173991163
+5. Thioheptahexaenylidene 	 score: 0.001349186084560156
+6. Ethyl cyanide, v<sub>12</sub> = 1 	 score: 0.00026546407487097257
+7. iso-propyl cyanide 	 score: 0.0002084511680270263
+8. Formamide 	 score: 0.0001571079042618628
+9. Ethylene Glycol 	 score: 0.00012860381071682215
+10. Methyl cyanate 	 score: 9.04017520834983e-05
+11. Benzonitrile 	 score: 5.8673233951313846e-05
+12. Ethanethiol, anti 	 score: 5.48801247026649e-05
+13. n-Butyl cyanide 	 score: 4.167534060768299e-05
+14. 1,2-propanediol, aG'g 	 score: 3.157403250358258e-05
+15. <i>n</i>-Propanol 	 score: 2.776976859150515e-05
+16. gauche-n-butyronitrile, v<sub>28</sub> = 1 	 score: 2.4725277391595467e-05
+17. Propynylidyne 	 score: 2.430650688361517e-05
+18. &alpha;-Alanine 	 score: 2.077005966520253e-05
+19. gauche-n-butyronitrile 	 score: 1.9747062556049922e-05
+20. 1,3-propanediol, gGG'g 	 score: 1.6201980789573004e-05
+21. 2-Cyanobutane 	 score: 1.5246019916553357e-05
+22. Disulfurmonoxide 	 score: 1.3877496349472461e-05
+23. Chloryl chloride 	 score: 8.567688525001661e-06
+24. Anisole 	 score: 7.828273152115945e-06
+25. gauche-n-butyronitrile, v<sub>30</sub> = 2 	 score: 7.160664513687208e-06
+26. 1,2-propanediol, g'G'g 	 score: 5.999134443281115e-06
+27. Dihydroxyacetone 	 score: 5.081865107850646e-06
+28. <i>cyclo</i>-Propyl cyanide 	 score: 3.5315399346023406e-06
+29. Formaldehyde 	 score: 2.0607078871250754e-06
+********************************************************************************
+Processing: Titan/Titan/Win2.clean1.contsub_Jy.rest.scom.c.txt
+
+0. Propane 	 score: 0.06893504193391005
+1. Peroxynitrous acid 	 score: 0.023294504075922356
+2. Methyl peroxide 	 score: 0.004077932269306471
+3. Scandium monosulfide 	 score: 0.0011543459267036689
+4. Hexatriynylformyl 	 score: 0.0006949521764210359
+5. <i>cyclo</i>-Propyl cyanide 	 score: 0.0005876172359627057
+6. Vinyl Cyanide 	 score: 0.0005067028943636696
+7. Chlorine nitrate 	 score: 0.00032461069328021223
+8. Glycine 	 score: 0.0002897692510551661
+9. &alpha;-Alanine 	 score: 0.0002270856664867066
+10. <i>n</i>-Propanol 	 score: 0.0001767973128853742
+11. 1,3-propanediol, gGG'g 	 score: 0.00012095992943786865
+12. Carbonyl cyanide 	 score: 0.00011255652572376766
+13. Diethyl ether 	 score: 0.00011023829256345366
+14. o-Benzyne 	 score: 0.00010980857151915148
+15. Benzaldehyde 	 score: 4.242533652915631e-05
+16. Difluoromethane 	 score: 2.76706117379397e-05
+17. Cyanoacetylene 	 score: 2.733373176350431e-05
+18. 2-Cyanobutane 	 score: 1.321001310984368e-05
+19. 1-butyne 	 score: 1.2814095542359673e-05
+20. iso-propyl cyanide 	 score: 1.2372483941467274e-05
+21. Methyleneaminoacetonitrile 	 score: 1.207056521218632e-05
+22. n-Butyl cyanide 	 score: 4.261435292979535e-06
+23. Dihydroxyacetone 	 score: 3.72952161654411e-06
+24. gauche-n-butyronitrile, v<sub>29</sub> = 1 	 score: 3.7001971712449075e-06
+25. Aminoacetonitrile 	 score: 3.6619549269304594e-06
+26. Ethanethiol, gauche 	 score: 1.211864814695735e-06
+27. Glycolaldehyde 	 score: 6.964292011848376e-07
+28. Nitric acid 	 score: 5.306938442703315e-07
+29. Ethylene Glycol 	 score: 4.947135863133755e-07
+********************************************************************************
+Processing: Titan/Titan/Win0.clean1.contsub_Jy.rest.scom.c.txt
+
+0. Methyl Cyanide 	 score: 0.7068640424484772
+1. Propane 	 score: 0.0739726026906234
+2. Cyanobutadiynylide anion 	 score: 0.012226639936617902
+3. Methyl Acetylene 	 score: 0.004394736027330096
+4. Benzonitrile 	 score: 0.0013266641211959035
+5. Vinylcyanoacetylene 	 score: 0.0012190909701021244
+6. Sulfuric acid 	 score: 0.0007451551104949757
+7. <i>anti</i>-Ethanol 	 score: 0.00034916174589018936
+8. Carbonyl cyanide 	 score: 0.00029530708491159834
+9. Ethyl Cyanide 	 score: 0.00027536910159203234
+10. Pyrrole 	 score: 0.00014846061205385088
+11. gauche-n-butyronitrile, v<sub>29</sub> = 1 	 score: 0.00011494160560534179
+12. Chlorine nitrate 	 score: 0.00011079043935772497
+13. gauche-n-butyronitrile, v<sub>30</sub> = 2 	 score: 9.66483125754307e-05
+14. Diketene 	 score: 8.754919934565649e-05
+15. Glycolaldehyde 	 score: 7.168569680217667e-05
+16. Tetrasulfur 	 score: 4.971603523704309e-05
+17. 1,3-propanediol, gGG'g 	 score: 2.9348994982572473e-05
+18. Formamide 	 score: 2.550870870598435e-05
+19. Anisole 	 score: 2.4051157118544467e-05
+20. Glycine 	 score: 1.5468497763033914e-05
+21. Aminoacetonitrile 	 score: 8.050572696527316e-06
+22. Chlorine peroxide 	 score: 6.067143354904516e-06
+23. 1,2-propanediol, aG'g 	 score: 5.909234959880507e-06
+24. 1,2-propanediol, g'G'g 	 score: 5.692945332377521e-06
+25. anti-n-butyronitrile, v<sub>29</sub> = 1 	 score: 5.504278543938788e-06
+26. n-Butyl cyanide 	 score: 4.843721426862154e-06
+27. 2-Cyanobutane 	 score: 3.4895881143682326e-06
+28. Hydroxyacetonitrile 	 score: 2.0538913143739612e-06
+29. Ethyl cyanide 	 score: 1.550304028056716e-06
