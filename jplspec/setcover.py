@@ -48,7 +48,7 @@ def broadcast(l, a):
 
 class SetCovering(object):
     def __init__(self, spikes, moles, method=frequency_cover, scoring = "intensity_score", temperature=None):
-        self.sets, self.spike_dict = set_generation(spikes, moles, method = method, scoring=scoring, temperature = temperature)
+        self.sets, self.spike_dict, self.plot_dict = set_generation(spikes, moles, method = method, scoring=scoring, temperature = temperature)
         self.spikes = spikes
         self.method = method
         self.scoring = scoring
@@ -85,6 +85,7 @@ def set_generation(spikes, moles, method=frequency_cover, scoring = "intensity_s
     spacing = (spikes.data[1:, 0] - spikes.data[:-1, 0]).mean() / 2
     spike_list = [spikes.frequency - spacing, spikes.frequency + spacing, spikes.intensity, spikes.frequency]
     out_mols = {}
+    plot_dict = {}
     if temperature is not None:
         print("converting intensities")
         moles = convert_intensities(moles, temperature)
@@ -97,20 +98,28 @@ def set_generation(spikes, moles, method=frequency_cover, scoring = "intensity_s
             if spike_matches.sum(1)[i]: # santerre trick
                 # score now, make this to classes
                 winner = mol.molecule
-                spike_intensities = mol.intensity[np.where(spike_matches.sum(0) != 0)].astype(np.float128)
-                I = np.power(np.array([10.]).astype(np.float128), mol.intensity.astype(np.float128))
-                I = np.nansum(I)
-                score = ((np.power(np.array([10.]).astype(np.float128), spike_intensities))/I)
-                score = np.nansum(score)
+                molidxs = np.where((mol.frequency >= spikes.data[:,0].min() - spacing) & (mol.frequency <= spikes.data[:,0].max() + spacing))
+                matchids = np.where((spike_matches.sum(0) != 0) & (mol.frequency >= spikes.data[:,0].min() - spacing) & (mol.frequency <= spikes.data[:,0].max() + spacing))
+                spike_intensities = mol.intensity[np.where((spike_matches.sum(0) != 0) & (mol.frequency >= spikes.data[:,0].min() - spacing) & (mol.frequency <= spikes.data[:,0].max() + spacing))]
+                I = np.power(10., mol.intensity[molidxs[0]]).sum()
+                score = ((np.power(10., spike_intensities))).sum()/I
+                plot_dict[winner] = {
+                    "mol_freq": mol.frequency[molidxs],
+                    "mol_intensity": mol.frequency[molidxs],
+                    "match_freq": mol.frequency[matchids],
+                    "match_intensity": mol.intensity[matchids]
+                                     }
+                if score > 1.:
+                    import pdb; pdb.set_trace()  # XXX BREAKPOINT
                 if np.isnan(score):
-                    score=-1
+                    score=-1.
                 spike_dict[list(spike_dict.keys())[i]].append((mol.molecule, score))
     spike_dict = {k: v if len(v) > 0 else ["unknown"] for k, v in spike_dict.items()}
     result = {}
     for s in tqdm.tqdm(spike_dict.keys(), desc = "Generating combinations..."):
         result.setdefault(s, []).append([x for z in [list(it.combinations(spike_dict[s],y+1)) for y in range(len(spike_dict[s]))] for x in z])
     print("Restructuring data...")
-    return list(map(list, zip(*list(map(list,list(it.product(*result.values()))[0]))))), spike_dict
+    return list(map(list, zip(*list(map(list,list(it.product(*result.values()))[0]))))), spike_dict, plot_dict
 
 def get_mol_set(tl):
     return set(sum(it.chain(tl), ()))

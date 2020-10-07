@@ -14,6 +14,17 @@ stdout = sys.stdout
 PATH = "Titan/Titan/"
 files = [f"{PATH}{f}" for f in os.listdir(PATH)]
 
+pp = "Titan/Titan/Win0.clean1.contsub_Jy.rest.scom.c.txt"
+data = nasa.read(nasa.SpectralFile(pp))
+spikes = nasa.identify_spikes(data)
+import joblib; joblib.dump(spikes._asdict(), "parteespike.pkl")
+molecules = m.get_molecules_from_spikes(spikes)
+cover = sc.SetCovering(spikes, molecules)
+joblib.dump(cover.spike_dict, "partee_spike_dict.pkl")
+joblib.dump(cover.likeliest_molecules(), "partee_likely_mols.pkl")
+joblib.dump(cover.plot_dict, "plot_dict.py")
+import pdb; pdb.set_trace()  # XXX BREAKPOINT
+
 for f in files:
     data = nasa.read(nasa.SpectralFile(f))
     spikes = nasa.identify_spikes(data)
