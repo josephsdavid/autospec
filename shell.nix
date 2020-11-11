@@ -6,6 +6,9 @@ in
   pkgs.mkShell {
     name = "astro";
     buildInputs = with pkgs //  ml_libs; [
+      cython
+      plotly
+      jupyterlab
       python37
       virtualenv
       tqdm
@@ -20,12 +23,11 @@ in
       seaborn
       pytest
       astropy
-      astroquery
       beautifulsoup4
       R
       rPackages.rmarkdown
       rPackages.reticulate
    ];
    shellHook = ''
-   '';
+      export SOURCE_DATE_EPOCH=$(date +%s)   '';
 }

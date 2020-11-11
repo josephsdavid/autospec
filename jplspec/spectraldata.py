@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from collections import namedtuple
 import scipy.stats as ss
 from pprint import pprint
-from utility import doctuple
+from .utility import doctuple
 import pdb
 
 # this is probably not the way forward, but I think having minimalist classes
@@ -39,7 +39,7 @@ def trimmed_mean(x):
 
 
 def std(x):
-    return x.std()
+    return ss.trimboth(x, 0.2).std()
 
 
 def doctuple(doc, *args, **kwargs):
@@ -102,13 +102,26 @@ SpectralData = doctuple(
     SpectralFile._fields + ("data", "frequency", "intensity", "num_entries"),
 )
 
+def _read_file(p:str) -> np.ndarray:
+    with open(p, 'r') as f:
+        raw = [line.replace('\n', '') for line in f.readlines()]
+    raw = [row for row in raw if row]
+    metadata = ''.join([x for x in raw if '#' in x])
+    data = np.array([[float(x) for x in y.split()] for y in raw if '#' not in y])
+    if metadata:
+        print("metadata detected")
+        GHZ = 'MHz' not in metadata
+        if not GHZ:
+            print("cleaning units")
+            data[:,0] /= 1000
+    return data
 
 def read(sf: SpectralFile):
     '''
     read: Extract data from a spectralFile
     '''
     if type(sf.file_location) is not list:
-        data = np.genfromtxt(sf.file_location)
+        data = _read_file(sf.file_location).astype(np.float32)
     else:
         data = np.vstack([np.genfromtxt(f) for f in sf.file_location])
     # *data.T is so cool

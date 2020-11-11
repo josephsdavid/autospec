@@ -1,11 +1,12 @@
-from spectraldata import convert_units
+from .spectraldata import convert_units
 import numpy as np
 from bs4 import BeautifulSoup
 from requests_html import AsyncHTMLSession
 import re
+from os.path import isfile
 from astropy import units as u
 from astroquery.splatalogue import Splatalogue
-from utility import doctuple
+from .utility import doctuple
 from functools import reduce, partial
 import asyncio
 from tqdm import tqdm
@@ -119,6 +120,7 @@ def query_splatalogue(spikes):
     )
     out = []
     for i in range(spikes.frequency.shape[0]):
+        import pdb; pdb.set_trace()  # XXX BREAKPOINT
         res = Splatalogue.query_lines(
             *bounds[i, :].T,
             show_molecule_tag=True,
@@ -126,6 +128,7 @@ def query_splatalogue(spikes):
             line_lists=["CDMS", "JPL"],
             line_strengths="ls1",
         )
+        import pdb; pdb.set_trace()  # XXX BREAKPOINT
         if "Molecule<br>Tag" in res.keys():
             tag = list(
                 map(lambda x: str(x).zfill(6).replace("-", "0"), res["Molecule<br>Tag"])
@@ -138,7 +141,7 @@ def query_splatalogue(spikes):
     return set(zip(*[sum(o, []) for o in zip(*out)]))
 
 
-def get_molecules_from_spikes(spikes):
+def _get_molecules_from_spikes(spikes):
     print("Querying SPlatalogue...")
     molecule_set = query_splatalogue(spikes)
     # Do the async thing
@@ -152,6 +155,17 @@ def get_molecules_from_spikes(spikes):
     out = {m[-1]: result for m, result in zip(molecule_set, results)}
     print("Cleaning up...")
     return {k: convert_units(v, "GHz") for k, v in out.items()}
+
+def get_molecules_from_spikes(spikes, save_path=None):
+    if save_path is not None:
+        if isfile(save_path):
+            return load_molecules(save_path)
+        else:
+            result = _get_molecules_from_spikes(spikes)
+            save_molecules(result, save_path)
+            return result
+    else:
+        return _get_molecules_from_spikes(spikes)
 
 
 def save_molecules(mols, path):

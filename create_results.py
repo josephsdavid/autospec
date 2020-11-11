@@ -1,35 +1,39 @@
-import spectraldata as nasa
+import jplspec as jpl
 from pprint import pprint
 import numpy as np
 import sys
-import molecules as m
 from itertools import chain
-import setcover as sc
 import os
-import joblib
 
 stdout = sys.stdout
 
 # molecules = m.construct_mega_query
-PATH = "Titan/Titan/"
+PATH = "data2/"
 files = [f"{PATH}{f}" for f in os.listdir(PATH)]
-
-pp = "Titan/Titan/Win0.clean1.contsub_Jy.rest.scom.c.txt"
-data = nasa.read(nasa.SpectralFile(pp))
-spikes = nasa.identify_spikes(data)
-import joblib; joblib.dump(spikes._asdict(), "parteespike.pkl")
-molecules = m.get_molecules_from_spikes(spikes)
-cover = sc.SetCovering(spikes, molecules)
-joblib.dump(cover.spike_dict, "partee_spike_dict.pkl")
-joblib.dump(cover.likeliest_molecules(), "partee_likely_mols.pkl")
-joblib.dump(cover.plot_dict, "plot_dict.py")
+#import pdb; pdb.set_trace()  # XXX BREAKPOINT
+#
+#f = "Titan/Titan/Win0.clean1.contsub_Jy.rest.scom.c.txt"
+#data = jpl.read(jpl.SpectralFile(f))
+#spikes = jpl.identify_spikes(data)
+#molecules = jpl.get_molecules_from_spikes(spikes, save_path="win0.dmp")
+#cover = jpl.SetCovering(spikes, molecules)
+#fig = cover.visualize()
+#fig2 = cover.visualize(lines=0.02)
+#pprint(cover.likeliest_molecules())
 import pdb; pdb.set_trace()  # XXX BREAKPOINT
+#
+#
+
 
 for f in files:
-    data = nasa.read(nasa.SpectralFile(f))
-    spikes = nasa.identify_spikes(data)
-    molecules = m.get_molecules_from_spikes(spikes)
-    cover = sc.SetCovering(spikes, molecules)
+    print(f)
+    data = jpl.read(jpl.SpectralFile(f))
+    import pdb; pdb.set_trace()  # XXX BREAKPOINT
+    spikes = jpl.identify_spikes(data)
+    import pdb; pdb.set_trace()  # XXX BREAKPOINT
+    molecules = jpl.get_molecules_from_spikes(spikes)
+    import pdb; pdb.set_trace()  # XXX BREAKPOINT
+    cover = jpl.SetCovering(spikes, molecules)
     print("writing results")
     with open("results.txt", 'a') as fi:
         sys.stdout = fi
