@@ -1,0 +1,154 @@
+---
+title: "JPL Spectroscopy"
+author: "David Josephs, John Partee"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+    number_sections: true
+    theme: united
+    highlight: haddock
+    df_print: paged
+    keep_md: TRUE
+    fig_width: 10
+    fig_height: 10
+    fig_retina: true
+---
+
+```{r setup, include = F}
+knitr::opts_chunk$set(warning = F, message = F, dev = "svg", fig.align = "center")
+knitr::opts_chunk$set(tidy = T)
+knitr::opts_chunk$set(comment = '#>')
+options(digits = 2)
+```
+
+
+# Installation
+
+First, install the requirements:
+
+```bash
+pip install -r requirements.txt
+```
+
+This is included in the zip file, however they are listed here for transparency:
+
+```bash
+plotly
+tqdm
+numpy
+matplotlib
+scipy
+astropy
+requests-html
+astroquery
+beautifulsoup4
+```
+
+## Project Layout (for now)
+
+Next, start working relative to the jplspec (for example if you were working on a project called `myproject.py`):
+
+```bash
+.
+├── jplspec
+│   ├── __init__.py
+│   ├── molecules.py
+│   ├── setcover.py
+│   ├── spectraldata.py
+│   └── utility.py
+├── project.py
+├── README.md
+└── requirements.txt
+```
+
+Now we can start running the code!
+
+# Loading the data:
+
+First, we import the library:
+
+```{python}
+import jplspec as jpl
+
+
+```
+
+## The SpectralFile and SpectralData classes
+
+Now we can reference the file with the `SpectralFile` class, and then `read` it into a `SpectralData` object:
+
+```{python}
+path ="Titan/Titan/Win0.clean1.contsub_Jy.rest.scom.c.txt"
+myfile = jpl.SpectralFile(path)
+print(myfile)
+
+data = jpl.read(myfile)
+print(data)
+```
+
+Note we can wrap this all in one step with:
+
+```python
+data = jpl.read(jpl.SpectralFile(path))
+```
+
+Please also note optional keyword arguments: `name, temperature, time, data, units`. These are not necessary, however they may be useful from an organizational perspective. All attributes of all objects in the `jplspec` library can be accessed via `object.attribute`
+
+# Spike Identification and Database Querying
+
+Now we can identify the spikes!
+
+## Spike identification
+
+Identified using a three sigma threshold. This can be modified by writing a custom function that returns indices of true cases using `np.where`, and using the `spike_method` argument
+
+```{python}
+spikes = jpl.identify_spikes(data)
+jpl.plot_spikes(spikes)
+print(spikes)
+```
+
+### Adjusting the spike identification method
+
+To adjust the spike identification method, we write a function which returns a boolean value. We have 4 attributes to play with, `intensity`, `frequency`, `std`, and `mean`. These are all optinally used, so we can write spike identification methods with whatever we want. As an example, if we are looking for two sigma events, we could write:
+```python
+def two_sigma_spike(x):
+  return x.intensity > (x.mean + 2 * x.std)
+```
+
+## Finding associated molecules from the spikes
+
+Next, we query the spectroscopy datasets for our spikes:
+
+```{python}
+molecules = jpl.get_molecules_from_spikes(spikes, save_path="win0.dmp")
+```
+
+Note this will only take a long time once if we use the save_path argument. This saves the molecule information in a standard python dictionary.
+
+# Set covering
+
+Finally, we can score all the molecules and generate the sets!
+
+```{python}
+import pprint
+result = jpl.SetCovering(spikes, molecules)
+scored_molecules = result.likeliest_molecules()
+scored_sets = result.likeliest_sets()
+pprint.pprint(scored_molecules)
+pprint.pprint(scored_sets[0])
+fig = result.visualize() # lines is a height scaling parameter
+```
+
+We can visualize this with `fig.show()`, just like matplotlib:
+```{python, echo=F}
+fig.write_html("ok.html")
+```
+
+```{r, echo=F}
+htmltools::includeHTML("ok.html")
+```
+

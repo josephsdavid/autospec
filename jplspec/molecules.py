@@ -1,16 +1,20 @@
-from .spectraldata import convert_units
-import numpy as np
-from bs4 import BeautifulSoup
-from requests_html import AsyncHTMLSession
-import re
+import asyncio
+from functools import partial, reduce
 from os.path import isfile
+from random import randint
+import re
+
 from astropy import units as u
 from astroquery.splatalogue import Splatalogue
-from .utility import doctuple
-from functools import reduce, partial
-import asyncio
+from bs4 import BeautifulSoup
+import numpy as np
+from requests_html import AsyncHTMLSession
 from tqdm import tqdm
-from random import randint
+
+from .spectraldata import convert_units
+from .utility import doctuple
+
+Splatalogue.QUERY_URL = 'https://splatalogue.online/c_export.php'
 
 
 @asyncio.coroutine
@@ -90,7 +94,11 @@ async def get_molecule_data(db, tag, molecule=None):
     data = (
         np.array([list(map(_regex_helper, x.split()[:5])) for x in lines[:-1]]) * u.MHz
     )
-    return SpectralQuery(molecule, data.value, *data.value.T, "MHz")
+    try:
+        result = SpectralQuery(molecule, data.value, *data.value.T, "MHz")
+    except TypeError:
+        result = None
+    return result
 
 
 # def get_molecule_csv():
@@ -113,14 +121,13 @@ splat_query = doctuple(
 def query_splatalogue(spikes):
     # from a spike to the splatalogue (linelist, tag, moleculename)
     # verify this is right
-    spacing = (spikes.data[1:, 0] - spikes.data[:-1, 0]).mean() / 2
+    spacing = (spikes.data[1:, 0] - spikes.data[:-1, 0]).mean()
     bounds = (
         np.column_stack([spikes.frequency - spacing, spikes.frequency + spacing])
         * u.GHz
     )
     out = []
     for i in range(spikes.frequency.shape[0]):
-        import pdb; pdb.set_trace()  # XXX BREAKPOINT
         res = Splatalogue.query_lines(
             *bounds[i, :].T,
             show_molecule_tag=True,
@@ -128,7 +135,6 @@ def query_splatalogue(spikes):
             line_lists=["CDMS", "JPL"],
             line_strengths="ls1",
         )
-        import pdb; pdb.set_trace()  # XXX BREAKPOINT
         if "Molecule<br>Tag" in res.keys():
             tag = list(
                 map(lambda x: str(x).zfill(6).replace("-", "0"), res["Molecule<br>Tag"])
@@ -152,7 +158,7 @@ def _get_molecules_from_spikes(spikes):
     results = []
     for i in tqdm(range(0, len(jobs) + 5, 5)):
         results += loop.run_until_complete(asyncio.gather(*jobs[i : i + 5]))
-    out = {m[-1]: result for m, result in zip(molecule_set, results)}
+    out = {m[-1]: result for m, result in zip(molecule_set, results) if result is not None}
     print("Cleaning up...")
     return {k: convert_units(v, "GHz") for k, v in out.items()}
 

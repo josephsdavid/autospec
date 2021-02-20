@@ -6,6 +6,7 @@ in
   pkgs.mkShell {
     name = "astro";
     buildInputs = with pkgs //  ml_libs; [
+      joblib
       cython
       plotly
       jupyterlab
@@ -18,7 +19,6 @@ in
       matplotlib
       pandas
       scipy
-      scikitlearn
       h5py
       seaborn
       pytest

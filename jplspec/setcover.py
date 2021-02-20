@@ -1,13 +1,10 @@
-import pandas as pd
+import sys
+import os
 from itertools import cycle
 import plotly.express as px
 import numpy as np
-import math
-import matplotlib.pyplot as plt
 from collections import namedtuple, defaultdict
-from functools import partial
 import itertools as it
-from multiprocessing import Pool
 import plotly.graph_objects as go
 from .molecules import SpectralQuery
 import tqdm
@@ -33,9 +30,7 @@ def convert_intensities(molecules, temp):
     return {k: SpectralQuery(**v) for k, v in out.items()}
 
 
-SpikeHelper = namedtuple(
-    "SpikeHelper", ("frequency_low", "frequency_high", "intensity", "frequency")
-)
+SpikeHelper = namedtuple("SpikeHelper", ("frequency_low", "frequency_high", "intensity", "frequency"))
 MolHelper = namedtuple("MolHelper", ("frequency", "uncertainty"))
 
 
@@ -49,16 +44,7 @@ def reverse_dict(d):
 
 def frequency_cover(molecule, spike):
     return (molecule.frequency <= spike.frequency_high + molecule.uncertainty) & (
-        molecule.frequency >= spike.frequency_low - molecule.uncertainty
-    )
-
-def entropy_score(molecule, spike):
-    mol_intense = (molecule.intensity - molecule.intensity.min()) / (molecule.intensity.max() - molecule.intensity.min())
-    spike_intense = (spike.intensity - spike.intensity.min()) / (spike.intensity.max() - spike.intensity.min())
-    mol_ent = (10**mol_intense * np.divide(mol_intense, spike_intense,  where=spike_intense!=0)).sum()
-    spike_ent = (10**spike_intense * np.divide(spike_intense, mol_intense,  where=mol_intense!=0)).sum()
-    import pdb; pdb.set_trace()
-    return mol_ent + spike_ent
+        molecule.frequency >= spike.frequency_low - molecule.uncertainty)
 
 
 def broadcast(l, a):
@@ -73,10 +59,8 @@ class SetCovering(object):
         method=frequency_cover,
         scoring="intensity_score",
         temperature=None,
-    ):
-        self.sets, self.spike_dict, self.plot_dict = set_generation(
-            spikes, moles, method=method, scoring=scoring, temperature=temperature
-        )
+        threshold = 0.0):
+        self.sets, self.spike_dict, self.plot_dict = set_generation(spikes, moles, method=method, scoring=scoring, temperature=temperature, threshold=threshold)
         self.spikes = spikes
         self.method = method
         self.scoring = scoring
@@ -90,7 +74,10 @@ class SetCovering(object):
         return len(self.sets)
 
     def minimal_set(self, unique=True):
-        return minimal_set(self.sets, unique)
+        set_complexity = [len(set(sum(it.chain(x), ()))) for x in self.sets]
+        min_index = set_complexity.index(min(set_complexity))
+        return get_mol_set(self.sets[min_index]) if unique else self.sets[min_index]
+
 
     def likeliest_sets(self):
         intensity_results = []
@@ -106,55 +93,37 @@ class SetCovering(object):
             set(it.chain(*it.chain(*self.sets))), key=lambda x: x[-1], reverse=True
         )
 
-    def visualize(self, lines=False):
+    def visualize(self, lines=True):
         colorgen = cycle(px.colors.qualitative.Plotly)
         colors = {mol: next(colorgen) for mol in set(self.plot_dict.keys())}
         plot_dict = dict(
             sorted(
                 self.plot_dict.items(),
-                key=lambda x: x[1]["match_intensity"][0],
-                reverse=False,
             )
         )
-        fig = go.Figure(
-            data=go.Scatter(
-                x=self.spikes.data[:, 0],
-                y=self.spikes.data[:, -1],
-                legendgroup="Spectrum",
-                name="Spectrum",
-                opacity=0.2,
-                mode="lines",
-            )
-        )
+        fig = go.Figure()
         if lines:
+            linelist = []
+            spike_max = self.spikes.data[:,-1].max()
+            spike_mean = self.spikes.data[:,-1].mean()
             for molecule, info in plot_dict.items():
                 freq = info["match_freq"].tolist()
                 intense = (info["match_intensity"] * lines).tolist()
-            #    fig.add_trace(
-            #        go.Scatter(
-            #            x=[[f, f] for f in freq],
-            #            y=[[-i,i] for i in intense] ,
-            #            mode="lines+text",
-            #            legendgroup=f"{molecule} spectrum",
-            ##            name=molecule,
-            #            textposition="bottom center",
-            #            visible="legendonly",
-            #            line=dict(color=colors[molecule])
-            #        )
-            #    )
                 for f, i in zip(freq, intense):
                     fig.add_trace(
                         go.Scatter(
                             x=[f, f],
-                            y=[-i, i] ,
+                            y=[spike_mean, spike_max] ,
                             mode="lines+text",
+                            showlegend=True if molecule not in linelist else False,
                             legendgroup=f"{molecule} spectrum",
-                            name=molecule,
+                            name=f"{molecule}, {info['score']:.3f}",
                             textposition="bottom center",
                             visible="legendonly",
-                            line=dict(color=colors[molecule])
+                            line=dict(color=colors[molecule]),
                         )
                     )
+                    linelist.append(molecule)
         else:
             mean = self.spikes.data[:, -1].mean()
             minim = self.spikes.data[:, -1].min()
@@ -171,87 +140,44 @@ class SetCovering(object):
                         line=dict(color=colors[molecule])
                     )
                 )
-        return fig
-    def visualize00(self, lines=False):
-
-
-        plot_dict = dict(
-            sorted(
-                self.plot_dict.items(),
-                key=lambda x: x[1]["match_intensity"][0],
-                reverse=False,
-            )
-        )
-        fig = go.Figure(
-            data=go.Scatter(
+        fig.add_trace(
+            go.Scatter(
                 x=self.spikes.data[:, 0],
                 y=self.spikes.data[:, -1],
+                marker_color="black",
                 legendgroup="Spectrum",
                 name="Spectrum",
-                opacity=0.2,
+                opacity=0.4,
                 mode="lines",
+                showlegend=False
             )
         )
-        if lines:
-
-            for molecule, info in plot_dict.items():
-                freq = info["match_freq"].tolist()
-                intense = (info["match_intensity"] * lines).tolist()
-                fig.add_trace(
-                    go.Scatter(
-                        x=[[f, f] for f in freq],
-                        y=[[-i,i] for i in intense] ,
-                        mode="lines+text",
-                        legendgroup=f"{molecule} spectrum",
-                        name=molecule,
-                        textposition="bottom center",
-                        visible="legendonly"
-                    )
-                )
-
-                for f, i in zip(freq, intense):
-                    fig.add_trace(
-                        go.Scatter(
-                            x=[f, f],
-                            y=[0, i] ,
-                            mode="lines+text",
-                            legendgroup=f"{molecule} spectrum",
-                            name=molecule,
-                            textposition="bottom center",
-                            visible="legendonly"
-                        )
-                    )
-
-        else:
-            mean = self.spikes.data[:, -1].mean()
-            minim = self.spikes.data[:, -1].min()
-            maxim = self.spikes.data[:, -1].max()
-
-            for molecule, info in plot_dict.items():
-                fig.add_trace(
-                    go.Scatter(
-                        x=list(info["match_freq"]),
-                        y=list(info["match_intensity"] * (minim - maxim) ** 3),
-                        mode="markers",
-                        legendgroup=molecule,
-                        name=f"{molecule}",
-                        textposition="bottom center",
-                    )
-                )
-
         return fig
+    def save_results(self, path: str):
+        fig = self.visualize(lines=True)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        fig.write_html(f"{path}/visualization.html")
+        stdout = sys.stdout
+        with open(f"{path}/results.txt", 'w') as outfile:
+            sys.stdout = outfile
+            print("*"*80, flush=True)
+            print()
+            mols = self.likeliest_molecules()
+            for idx, mol in enumerate(mols):
+                print(f"{idx}. {mol[0]} \t score: {mol[1]}")
+        sys.stdout = stdout
+        return
 
 
 
 
-def set_generation(
-    spikes, moles, method=frequency_cover, scoring="intensity_score", temperature=None
-):
+def set_generation(spikes, moles, method=frequency_cover, scoring="intensity_score", temperature=None, threshold = 0.05):
     spike_dict = {f: [] for f in spikes.frequency}
-    spacing = (spikes.data[1:, 0] - spikes.data[:-1, 0]).mean() / 2
+    spacing = (spikes.data[1:, 0] - spikes.data[:-1, 0]).mean() / 2 #what?
     spike_list = [
-        spikes.frequency - spacing,
         spikes.frequency + spacing,
+        spikes.frequency - spacing,
         spikes.intensity,
         spikes.frequency,
     ]
@@ -260,9 +186,18 @@ def set_generation(
     if temperature is not None:
         print("converting intensities")
         moles = convert_intensities(moles, temperature)
+    #mol=moles["Ethyl Cyanide"]
+    #spike_broadcast = SpikeHelper(*broadcast(spike_list, mol.frequency))
+    #spike_matches = method(mol, spike_broadcast)
+    #import pdb; pdb.set_trace()
+
+
 
     for mol in tqdm.tqdm(moles.values(), desc="identifying matches..."):
-        # spike_broadcast = [np.array([s for _ in range(mol.frequency.shape[0])]).T for s in spike_list]
+        #if mol.molecule == "Ethyl Cyanide":
+        #  print('ahtath')
+        #  import pdb; pdb.set_trace()
+
         spike_broadcast = SpikeHelper(*broadcast(spike_list, mol.frequency))
         spike_matches = method(mol, spike_broadcast)
         for i in range(spike_matches.sum(1).shape[0]):
@@ -285,46 +220,32 @@ def set_generation(
                         & (mol.frequency <= spikes.data[:, 0].max() + spacing)
                     )
                 ]
-                plot_dict[winner] = {
-                    "mol_freq": mol.frequency[molidxs],
-                    "mol_intensity": mol.frequency[molidxs],
-                    "match_freq": mol.frequency[matchids],
-                    "match_intensity": mol.intensity[matchids],
-                }
                 if scoring == "intensity_score":
                     I = np.power(10.0, mol.intensity[molidxs[0]]).sum()
                     score = ((np.power(10.0, spike_intensities))).sum() / I
-                elif scoring == "entropy_score":
-                    score = entropy_score(mol, spike_broadcast)
                 else:
                     print("error!!")
 
-                if score > 1.0:
-                    import pdb
-
-                    pdb.set_trace()  # XXX BREAKPOINT
                 if np.isnan(score):
                     score = -1.0
-                spike_dict[list(spike_dict.keys())[i]].append((mol.molecule, score))
+                if score >= threshold:
+                    plot_dict[winner] = {
+                        "mol_freq": mol.frequency[molidxs],
+                        "mol_intensity": mol.frequency[molidxs],
+                        "match_freq": mol.frequency[matchids],
+                        "match_intensity": mol.intensity[matchids],
+                        "score": score
+                    }
+                    spike_dict[list(spike_dict.keys())[i]].append((mol.molecule, score))
+    #import pdb; pdb.set_trace()
     spike_dict = {k: v if len(v) > 0 else ["unknown"] for k, v in spike_dict.items()}
     result = {}
     for s in tqdm.tqdm(spike_dict.keys(), desc="identifying sets..."):
         result.setdefault(s, []).append(
-            [
-                x
-                for z in [
-                    list(it.combinations(spike_dict[s], y + 1))
-                    for y in range(len(spike_dict[s]))
-                ]
-                for x in z
-            ]
-        )
-    print("Restructuring data...")
-    return (
-        list(map(list, zip(*list(map(list, list(it.product(*result.values()))[0]))))),
-        spike_dict,
-        plot_dict,
-    )
+            [ x for z in [ list(it.combinations(spike_dict[s], y + 1))
+                    for y in range(len(spike_dict[s])) ] for x in z ] )
+    print("Restructuring data..233333")
+    return (list(map(list, zip(*list(map(list, list(it.product(*result.values()))[0]))))), spike_dict, plot_dict, )
 
 
 def get_mol_set(tl):
@@ -334,54 +255,7 @@ def get_mol_set(tl):
 def spike_explanations(mol_list, spike_dict):
     return {
         list(spike_dict.keys())[i]: list(it.chain(mol_list[i]))
-        for i in range(len(mol_list))
-    }
-
-
-def minimal_set(possible_sets, unique=True):
-    set_complexity = [len(set(sum(it.chain(x), ()))) for x in possible_sets]
-    min_index = set_complexity.index(min(set_complexity))
-    return get_mol_set(possible_sets[min_index]) if unique else possible_sets[min_index]
-
-
-def minimal_set_iterator(possible_sets, unique=True):
-    set_complexity = [len(set(sum(it.chain(x), ()))) for x in possible_sets]
-    set_indexes = [set_complexity.index(x) for x in sorted(set_complexity)]
-    list_ = [possible_sets[i] for i in set_indexes]
-    for item in list_:
-        yield get_mol_set(item) if unique else item
-
-
-def intensity_score(single_cover, spike_dict, molecule_dict, spikes, temp_adjust=None):
-    # invert the spike_dict, so we have molecule: spikes
-    inverse_spikes = reverse_dict(spike_dict)
-    molecules = (
-        set(it.chain(single_cover))
-        if type(single_cover) is set
-        else set(it.chain(*single_cover))
-    )
-    res = []
-    if temp_adjust:
-        molecule_dict = convert_intensities(molecule_dict, temp_adjust)
-    for m in molecules:
-        if m not in inverse_spikes.keys():
-            res.append((m, np.nan))
-        else:
-            spike_intensities = spikes.intensity[
-                np.where(spikes.frequency == np.array(inverse_spikes[m]))
-            ]
-            I = np.array(10 ** molecule_dict[m].intensity).sum()
-            score = (10 ** spike_intensities / I).sum()
-            res.append((m, score))
-    return res
+        for i in range(len(mol_list))  }
 
 
 
-def summation_score(cover_list):
-    mols = [x.likeliest_molecules() for x in cover_list]
-    mols = sum(mols, [])
-    result = {key: 0.0 for key in set([x[0] for x in mols])}
-    for mol in mols:
-        result[mol[0]] += mol[-1]
-    out = [(key, value) for key, value in result.items()]
-    return sorted(out, key=lambda x: x[-1], reverse=True)

@@ -12,42 +12,6 @@ import pdb
 # for unit conversions i think we can just use a helper dict
 
 
-def convert_units(s, to='GHz'):
-    # fix for SDS class, make pure
-    unit_dict = {
-        'Hz': 1,
-        'kHz': 1e3,
-        'MHz': 1e6,
-        'GHz': 1e9
-    }
-    freq = s.frequency.copy()
-    freq *= unit_dict[s.units]/unit_dict[to]
-    out = s._asdict()
-    out['frequency'] = freq
-    out['units'] = to
-    out['data'][:,0] = freq
-    if 'uncertainty' in list(out.keys()):
-        out['uncertainty'] *= unit_dict[s.units]/unit_dict[to]
-    if type(s) is not SpectralDataStats:
-        return type(s)(**out)
-    else:
-        return get_stats(SpectralData(*s[:-5]), s.average_method, s.std_method)
-
-def trimmed_mean(x):
-    # this doesnt really matter
-    return ss.trim_mean(x, proportiontocut=0.2)
-
-
-def std(x):
-    return ss.trimboth(x, 0.2).std()
-
-
-def doctuple(doc, *args, **kwargs):
-    # so we can use docstrings
-    nt = namedtuple(*args, **kwargs)
-    nt.__doc__ = doc
-    return nt
-
 
 SpectralFile = doctuple(
     """
@@ -71,7 +35,6 @@ SpectralFile = doctuple(
     ["file_location", "name", "time", "date", "temp", "units"],
     defaults=[None] * 4 + ["GHz"],
 )
-
 
 
 SpectralData = doctuple(
@@ -101,31 +64,6 @@ SpectralData = doctuple(
     "SpectralData",
     SpectralFile._fields + ("data", "frequency", "intensity", "num_entries"),
 )
-
-def _read_file(p:str) -> np.ndarray:
-    with open(p, 'r') as f:
-        raw = [line.replace('\n', '') for line in f.readlines()]
-    raw = [row for row in raw if row]
-    metadata = ''.join([x for x in raw if '#' in x])
-    data = np.array([[float(x) for x in y.split()] for y in raw if '#' not in y])
-    if metadata:
-        print("metadata detected")
-        GHZ = 'MHz' not in metadata
-        if not GHZ:
-            print("cleaning units")
-            data[:,0] /= 1000
-    return data
-
-def read(sf: SpectralFile):
-    '''
-    read: Extract data from a spectralFile
-    '''
-    if type(sf.file_location) is not list:
-        data = _read_file(sf.file_location).astype(np.float32)
-    else:
-        data = np.vstack([np.genfromtxt(f) for f in sf.file_location])
-    # *data.T is so cool
-    return SpectralData(*sf, data, *data.T, data.shape[0])
 
 
 SpectralDataStats = doctuple(
@@ -159,6 +97,45 @@ SpectralDataStats = doctuple(
     + ("average_method", "std_method", "mean", "std", "spectral_range"),
 )
 
+# should spikes have *sd_stats?
+Spike = doctuple(
+    """doc holder""",
+    "Spike",
+    ["data", "frequency", "intensity", "index", "spike_method", "units"],
+)
+
+def three_sigma_spike(sd):
+    return sd.intensity > (sd.mean + 3 * sd.std)
+
+
+def convert_units(s, to='GHz'):
+    # fix for SDS class, make pure
+    unit_dict = {
+        'Hz': 1,
+        'kHz': 1e3,
+        'MHz': 1e6,
+        'GHz': 1e9
+    }
+    freq = s.frequency.copy()
+    freq *= unit_dict[s.units]/unit_dict[to]
+    out = s._asdict()
+    out['frequency'] = freq
+    out['units'] = to
+    out['data'][:,0] = freq
+    if 'uncertainty' in list(out.keys()):
+        out['uncertainty'] *= unit_dict[s.units]/unit_dict[to]
+    if type(s) is not SpectralDataStats:
+        return type(s)(**out)
+    else:
+        return get_stats(SpectralData(*s[:-5]), s.average_method, s.std_method)
+
+def trimmed_mean(x):
+    return ss.trim_mean(x, proportiontocut=0.2)
+
+
+def std(x):
+    return ss.trimboth(x, 0.1).std()
+
 
 def get_stats(sd: SpectralData, average_method=trimmed_mean, std_method=std):
     return SpectralDataStats(
@@ -171,37 +148,42 @@ def get_stats(sd: SpectralData, average_method=trimmed_mean, std_method=std):
     )
 
 
-# should spikes have *sd_stats?
-Spike = doctuple(
-    """doc holder""",
-    "Spike",
-    ["data", "frequency", "intensity", "index", "spike_method", "units"],
-)
+def _read_file(p:str) -> np.ndarray:
+    with open(p, 'r') as f:
+        raw = [line.replace('\n', '') for line in f.readlines()]
+    raw = [row for row in raw if row]
+    metadata = ''.join([x for x in raw if '#' in x])
+    data = np.array([[float(x) for x in y.split()] for y in raw if '#' not in y])
+    if metadata:
+        print("metadata detected")
+        GHZ = 'MHz' not in metadata
+        if not GHZ:
+            print("cleaning units")
+            data[:,0] /= 1000
+    if data[0,1] == 0:
+        data = data[1:,:]
+    if data[-1,1] == 0:
+        data = data[:-1,:]
+    return data
 
-
-def three_sigma_spike(sd):
-    return np.where(sd.intensity > (sd.mean + 3 * sd.std))[0]
+def read(sf: SpectralFile):
+    '''
+    read: Extract data from a spectralFile
+    '''
+    if type(sf.file_location) is not list:
+        data = _read_file(sf.file_location).astype(np.float32)
+    else: #multiple file case
+        data = np.vstack([np.genfromtxt(f) for f in sf.file_location])
+    # *data.T is so cool
+    return SpectralData(*sf, data, *data.T, data.shape[0])
 
 
 def identify_spikes(sd, spike_method=three_sigma_spike, **kwargs):
-    # the idea is that if the method uses the stats, we will have them, but if
-    # the method does not use the stats, we run one useless computation and
-    # preserve all the information
     if type(sd) is not SpectralDataStats:
-       # warning_text = "Please either run get_stats(spectral data) or provide both average_method and std_method"
-       # if "average_method" not in kwargs and "std_method" not in kwargs:
-       #     message = f"using trimmed mean and untrimmed std for stats. {warning_text}"
-       #     warnings.warn(message, SyntaxWarning)
-       # elif "average_method" not in kwargs:
-       #     message = f"using trimmed mean for stats. {warning_text}"
-       #     warnings.warn(message, SyntaxWarning)
-       # elif "std_method" not in kwargs:
-       #     message = f"using untrimmed std for stats. {warning_text}"
-       #     warnings.warn(message, SyntaxWarning)
         sds = get_stats(sd, **kwargs)
     else:
         sds = sd
-    ids = spike_method(sds)
+    ids = np.where(spike_method(sds))[0]
     return Spike(sds.data, sds.frequency[ids], sds.intensity[ids], ids, spike_method, sds.units)
 
 
@@ -212,36 +194,3 @@ def plot_spikes(sp):
     plt.show()
     return
 
-
-
-# testing zone
-sf = SpectralFile("Titan/Titan/Win0.clean1.contsub_Jy.rest.scom.c.txt")
-#print(read(sf).data - convert_units(get_stats(read(sf))).data)
-#import pdb; pdb.set_trace()  # XXX BREAKPOINT
-##sf = read(sf)
-##sd = get_stats(sf)
-##pprint(sd)
-##
-##
-### test out all our warnings
-##spikes = identify_spikes(sf, three_sigma_spike, average_method=trimmed_mean, std_method = std)
-##pdb.set_trace()  # XXX BREAKPOINT
-##
-##pprint(identify_spikes(sd, three_sigma_spike))
-##pprint(spikes)
-##
-##plot_spikes(spikes)
-##plot_spikes(identify_spikes(sd))
-##pdb.set_trace()  # XXX BREAKPOINT
-#
-#
-##out = []
-##for f in os.listdir("Titan/Titan/"):
-##    sf = SpectralFile(f"Titan/Titan/{f}")
-##    sd = read(sf)
-##    out += [sd]
-##    sd_stats = get_stats(sd)
-##    plot_spikes(identify_spikes(sd))
-##
-##import pdb; pdb.set_trace()  # XXX BREAKPOINT
-##
