@@ -1,5 +1,5 @@
 let
-  pkgs = import ./nixpkgs.nix;
+  pkgs = import <nixpkgs>{};
 
   ml_libs =  pkgs.python37Packages ;
 in
@@ -8,6 +8,7 @@ in
     buildInputs = with pkgs //  ml_libs; [
       joblib
       cython
+      astroquery
       plotly
       jupyterlab
       python37

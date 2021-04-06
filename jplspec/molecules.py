@@ -43,14 +43,15 @@ def _a_finder(t):
 
 @asyncio.coroutine
 async def _get_cdms_data(url, tag):
-    soup = await _bs4_tool(f"{url}/classic/entries/")
-    td_find = partial(_td_finder, tag=tag)
-    link = reduce(lambda x, cond: x.find(cond), ["table", td_find, _a_finder], soup)[
-        "href"
-    ]
-    linepage = await _bs4_tool(f"{url}{link}")
-    second_link = linepage.find("a")["href"]
-    return str((await _bs4_tool(f"{url}{second_link}")).find("pre"))
+    out = await _bs4_tool(f"{url}/classic/entries/c{tag}.cat")
+    return str(out)
+    #td_find = partial(_td_finder, tag=tag)
+    #link = reduce(lambda x, cond: x.find(cond), ["table", td_find, _a_finder], soup)[
+    #    "href"
+    #]
+    #linepage = await _bs4_tool(f"{url}{link}")
+    #second_link = linepage.find("a")["href"]
+    #return str((await _bs4_tool(f"{url}{second_link}")).find("pre"))
 
 
 def _regex_helper(s):
@@ -131,8 +132,8 @@ def query_splatalogue(spikes):
         res = Splatalogue.query_lines(
             *bounds[i, :].T,
             show_molecule_tag=True,
-            top20="planet",
             line_lists=["CDMS", "JPL"],
+            exclude=None,
             line_strengths="ls1",
         )
         if "Molecule<br>Tag" in res.keys():
@@ -140,7 +141,9 @@ def query_splatalogue(spikes):
                 map(lambda x: str(x).zfill(6).replace("-", "0"), res["Molecule<br>Tag"])
             )
             db = list(res["Linelist"])
-            molecule = list(res["Chemical Name"])
+            mname = list(res["Chemical Name"])
+            species = list(res["Species"])
+            molecule = [f"{m} ({s})" for m, s in zip(mname, species)]
             if res:
                 out.append(splat_query(db, tag, molecule))
     # tuple transpositions!

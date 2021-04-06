@@ -1,0 +1,9 @@
+plotly
+tqdm
+numpy
+matplotlib
+scipy
+astropy
+requests-html
+astroquery
+beautifulsoup4

@@ -160,10 +160,9 @@ def _read_file(p:str) -> np.ndarray:
         if not GHZ:
             print("cleaning units")
             data[:,0] /= 1000
-    if data[0,1] == 0:
-        data = data[1:,:]
-    if data[-1,1] == 0:
-        data = data[:-1,:]
+    # fix this logic!
+    data = data[1:,:]
+    data = data[:-1,:]
     return data
 
 def read(sf: SpectralFile):

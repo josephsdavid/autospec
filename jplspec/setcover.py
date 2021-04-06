@@ -7,6 +7,7 @@ from collections import namedtuple, defaultdict
 import itertools as it
 import plotly.graph_objects as go
 from .molecules import SpectralQuery
+from multiprocessing import Pool
 import tqdm
 
 
@@ -43,8 +44,14 @@ def reverse_dict(d):
 
 
 def frequency_cover(molecule, spike):
-    return (molecule.frequency <= spike.frequency_high + molecule.uncertainty) & (
+
+    if spike.frequency_high.min() > spike.frequency_low.min():
+        return (molecule.frequency <= spike.frequency_high + molecule.uncertainty) & (
         molecule.frequency >= spike.frequency_low - molecule.uncertainty)
+    else:
+        return (molecule.frequency <= spike.frequency_low + molecule.uncertainty) & (
+        molecule.frequency >= spike.frequency_high - molecule.uncertainty)
+
 
 
 def broadcast(l, a):
@@ -59,7 +66,7 @@ class SetCovering(object):
         method=frequency_cover,
         scoring="intensity_score",
         temperature=None,
-        threshold = 0.0):
+        threshold = 0.001):
         self.sets, self.spike_dict, self.plot_dict = set_generation(spikes, moles, method=method, scoring=scoring, temperature=temperature, threshold=threshold)
         self.spikes = spikes
         self.method = method
@@ -113,17 +120,20 @@ class SetCovering(object):
                     fig.add_trace(
                         go.Scatter(
                             x=[f, f],
-                            y=[spike_mean, spike_max] ,
-                            mode="lines+text",
+                            y=[spike_mean, spike_max ] ,
+                            mode="lines+markers",
                             showlegend=True if molecule not in linelist else False,
+                            text=molecule,
+                            hovertemplate=molecule,
                             legendgroup=f"{molecule} spectrum",
                             name=f"{molecule}, {info['score']:.3f}",
-                            textposition="bottom center",
+                            #textposition=None,
                             visible="legendonly",
-                            line=dict(color=colors[molecule]),
+                            line=dict(color=colors[molecule], width=2),
                         )
                     )
                     linelist.append(molecule)
+
         else:
             mean = self.spikes.data[:, -1].mean()
             minim = self.spikes.data[:, -1].min()
@@ -140,18 +150,28 @@ class SetCovering(object):
                         line=dict(color=colors[molecule])
                     )
                 )
+
+
+
         fig.add_trace(
             go.Scatter(
                 x=self.spikes.data[:, 0],
                 y=self.spikes.data[:, -1],
+                text=["<br>".join([x[0] for x in self.spike_dict[f]]) if f in self.spike_dict.keys() else "noise" for f in self.spikes.data[:,0]],
                 marker_color="black",
-                legendgroup="Spectrum",
-                name="Spectrum",
+                legendgroup="",
+                name="",
                 opacity=0.4,
                 mode="lines",
                 showlegend=False
             )
         )
+        fig.update_layout(
+                hoverlabel=dict(
+                    bgcolor="black",
+                    font_size=16,
+                    )
+                )
         return fig
     def save_results(self, path: str):
         fig = self.visualize(lines=True)
@@ -172,7 +192,7 @@ class SetCovering(object):
 
 
 
-def set_generation(spikes, moles, method=frequency_cover, scoring="intensity_score", temperature=None, threshold = 0.05):
+def set_generation(spikes, moles, method=frequency_cover, scoring="intensity_score", temperature=None, threshold = 0.001):
     spike_dict = {f: [] for f in spikes.frequency}
     spacing = (spikes.data[1:, 0] - spikes.data[:-1, 0]).mean() / 2 #what?
     spike_list = [
@@ -194,12 +214,10 @@ def set_generation(spikes, moles, method=frequency_cover, scoring="intensity_sco
 
 
     for mol in tqdm.tqdm(moles.values(), desc="identifying matches..."):
-        #if mol.molecule == "Ethyl Cyanide":
-        #  print('ahtath')
-        #  import pdb; pdb.set_trace()
-
         spike_broadcast = SpikeHelper(*broadcast(spike_list, mol.frequency))
         spike_matches = method(mol, spike_broadcast)
+        if "C2H5CN" in mol.molecule:
+            import pdb; pdb.set_trace()
         for i in range(spike_matches.sum(1).shape[0]):
             if spike_matches.sum(1)[i]:  # santerre trick
                 # score now, make this to classes
@@ -224,8 +242,7 @@ def set_generation(spikes, moles, method=frequency_cover, scoring="intensity_sco
                     I = np.power(10.0, mol.intensity[molidxs[0]]).sum()
                     score = ((np.power(10.0, spike_intensities))).sum() / I
                 else:
-                    print("error!!")
-
+                    raise NotImplementedError
                 if np.isnan(score):
                     score = -1.0
                 if score >= threshold:
@@ -244,8 +261,10 @@ def set_generation(spikes, moles, method=frequency_cover, scoring="intensity_sco
         result.setdefault(s, []).append(
             [ x for z in [ list(it.combinations(spike_dict[s], y + 1))
                     for y in range(len(spike_dict[s])) ] for x in z ] )
-    print("Restructuring data..233333")
-    return (list(map(list, zip(*list(map(list, list(it.product(*result.values()))[0]))))), spike_dict, plot_dict, )
+    print("Restructuring data...")
+    print("Average number of lines per molecule")
+
+    return list(map(list, zip(*list(map(list, list(it.product(*result.values()))[0]))))), spike_dict, plot_dict
 
 
 def get_mol_set(tl):
