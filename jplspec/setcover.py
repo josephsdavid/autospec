@@ -216,8 +216,8 @@ def set_generation(spikes, moles, method=frequency_cover, scoring="intensity_sco
     for mol in tqdm.tqdm(moles.values(), desc="identifying matches..."):
         spike_broadcast = SpikeHelper(*broadcast(spike_list, mol.frequency))
         spike_matches = method(mol, spike_broadcast)
-        if "C2H5CN" in mol.molecule:
-            import pdb; pdb.set_trace()
+        #if "C2H5CN" in mol.molecule:
+        #    import pdb; pdb.set_trace()
         for i in range(spike_matches.sum(1).shape[0]):
             if spike_matches.sum(1)[i]:  # santerre trick
                 # score now, make this to classes
